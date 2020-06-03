@@ -5,8 +5,11 @@
 package it.polito.tdp.food;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.food.model.Food;
+import it.polito.tdp.food.model.FoodCalories;
 import it.polito.tdp.food.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -41,7 +44,7 @@ public class FoodController {
     private Button btnSimula; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxFood"
-    private ComboBox<?> boxFood; // Value injected by FXMLLoader
+    private ComboBox<Food> boxFood; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
@@ -49,19 +52,52 @@ public class FoodController {
     @FXML
     void doCreaGrafo(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Creazione grafo...");
+    	int porzioni;
+    	try {
+    		porzioni=Integer.parseInt(this.txtPorzioni.getText());
+    		this.boxFood.getItems().clear();
+    		this.boxFood.getItems().addAll(model.getCibiSelezionati(porzioni));
+    		
+    	} catch(NumberFormatException e) {
+    		this.txtResult.appendText("Inserire una porzione!\n");
+    		return;
+    	}
+    	
     }
     
     @FXML
     void doCalorie(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Analisi calorie...");
+    	
+    	Food f=this.boxFood.getValue();
+    	if(f == null) {
+    		this.txtResult.appendText("ERRORE non hai selezionato un cibo!");
+    		return;
+    	}
+    	
+    	List<FoodCalories> lista =model.elencoCibiConnessi(f);
+    	
+    	for(int i=0; i<5 && i<lista.size(); i++)
+    		this.txtResult.appendText(String.format("%s %f\n", lista.get(i).getFood().getDisplay_name(), lista.get(i).getCalorie()));
     }
 
     @FXML
     void doSimula(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Simulazione...");
+    	Food cibo=this.boxFood.getValue();
+    	if(cibo == null) {
+    		this.txtResult.appendText("ERRORE non hai selezionato un cibo!");
+    		return;
+    	}
+    	try {
+    	int k=Integer.parseInt(this.txtK.getText());
+    	String messaggio=model.simula(cibo, k);
+    	this.txtResult.appendText(messaggio);
+    	}catch(NumberFormatException e) {
+    		this.txtResult.appendText("ERRORE il k deve essere un numero intero!");
+    		return;
+    	}
+    	
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete

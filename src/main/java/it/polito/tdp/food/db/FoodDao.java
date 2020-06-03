@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import it.polito.tdp.food.model.Adiacenza;
 import it.polito.tdp.food.model.Condiment;
 import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Portion;
@@ -108,5 +110,66 @@ public class FoodDao {
 			return null ;
 		}
 
+	}
+	
+	public List<Food> getFoodSelection(int porzioni){
+		String sql="SELECT f.food_code, f.display_name, COUNT(DISTINCT(p.portion_id)) AS cnt " + 
+				"FROM food f, `portion` p " + 
+				"WHERE f.food_code=p.food_code " + 
+				"GROUP BY f.food_code " + 
+				"HAVING cnt=? "+
+				"ORDER BY f.display_name asc ";
+		
+		List<Food>result=new ArrayList<>();
+		
+		try {
+			Connection conn = DBConnect.getConnection() ;
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			st.setInt(1, porzioni);
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				
+					Food f= new Food(res.getInt("food_code"), res.getString("display_name"));
+					result.add(f);
+			}
+			conn.close();
+			return result ;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return null ;
+	}
+	
+	public List<Adiacenza> getAdiacenze(Map<Integer, Food> foodidMap){
+		String sql="SELECT fc1.food_code as f1, fc2.food_code as f2, AVG(c.condiment_calories) as peso " + 
+				"FROM food_condiment fc1, food_condiment fc2, condiment c " + 
+				"WHERE fc1.food_code>fc2.food_code AND fc1.condiment_code=fc2.condiment_code " + 
+				"AND fc1.condiment_code=c.condiment_code " + 
+				"GROUP BY fc1.food_code, fc2.food_code";
+		
+		List<Adiacenza>result=new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection() ;
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				if(foodidMap.containsKey(res.getInt("f1")) && foodidMap.containsKey(res.getInt("f2"))) {
+					Adiacenza a = new Adiacenza(
+							foodidMap.get(res.getInt("f1")),
+							foodidMap.get(res.getInt("f2")),
+							res.getDouble("peso"));
+					result.add(a);
+				}
+			}
+			conn.close();
+			return result;
+		}catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }
